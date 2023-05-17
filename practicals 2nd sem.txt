@@ -1,0 +1,3898 @@
+                                                                  Practicals
+
+
+
+--------------------------------------------------------------------slip 1-----------------------------------------------------------------------
+
+
+
+
+1) Write a C program to implement the following unix/linux command (use fork, pipe
+   and execsystem call).
+   ls –l | wc–l
+Ans--
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    int pipefd[2];
+    pid_t child_pid1, child_pid2;
+
+    // Create a pipe
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return 1;
+    }
+
+    // Fork the first child process
+    child_pid1 = fork();
+    if (child_pid1 == -1) {
+        perror("fork");
+        return 1;
+    }
+
+    if (child_pid1 == 0) {
+        // Child process 1: execute 'ls -l' and write output to the pipe
+        close(pipefd[0]);  // Close the unused read end of the pipe
+        dup2(pipefd[1], STDOUT_FILENO);  // Redirect stdout to the pipe write end
+        close(pipefd[1]);  // Close the write end of the pipe
+
+        // Execute 'ls -l'
+        execlp("ls", "ls", "-l", NULL);
+        perror("execlp ls -l");
+        return 1;
+    }
+
+    // Fork the second child process
+    child_pid2 = fork();
+    if (child_pid2 == -1) {
+        perror("fork");
+        return 1;
+    }
+
+    if (child_pid2 == 0) {
+        // Child process 2: execute 'wc -l' and read input from the pipe
+        close(pipefd[1]);  // Close the unused write end of the pipe
+        dup2(pipefd[0], STDIN_FILENO);  // Redirect stdin to the pipe read end
+        close(pipefd[0]);  // Close the read end of the pipe
+
+        // Execute 'wc -l'
+        execlp("wc", "wc", "-l", NULL);
+        perror("execlp wc -l");
+        return 1;
+    }
+
+    // Parent process
+    close(pipefd[0]);  // Close the unused read end of the pipe
+    close(pipefd[1]);  // Close the unused write end of the pipe
+
+    // Wait for both child processes to finish
+    waitpid(child_pid1, NULL, 0);
+    waitpid(child_pid2, NULL, 0);
+
+    return 0;
+    }
+
+2) Write a program to perform zoom in, zoom out operation and display terrain view on
+   Google Map.
+Ans-  XML
+  
+   <?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <com.google.android.gms.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:apiKey="YOUR_API_KEY"
+        android:clickable="true" />
+
+</RelativeLayout>
+
+     --java--
+
+   import android.os.Bundle;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
+
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    private MapView mapView;
+    private GoogleMap googleMap;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        mapView = findViewById(R.id.mapView);
+        mapView.onCreate(savedInstanceState);
+        mapView.getMapAsync(this);
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap map) {
+        googleMap = map;
+
+        // Enable terrain view
+        googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style_json));
+
+        // Set initial zoom level and center the map
+        LatLng center = new LatLng(37.7749, -122.4194);
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(center, 12));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mapView.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mapView.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mapView.onDestroy();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        mapView.onLowMemory();
+    }
+}
+
+
+ 3) a)  Using node js create a web page to read two file names from user and append
+        contents of first file into second file. 
+Ans 
+
+   const express = require('express');
+const fs = require('fs');
+const app = express();
+const port = 3000;
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.set('view engine', 'ejs');
+
+app.get('/', (req, res) => {
+  res.render('index');
+});
+
+app.post('/append', (req, res) => {
+  const { file1, file2 } = req.body;
+
+  fs.readFile(file1, 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error reading file 1');
+    }
+
+    fs.appendFile(file2, data, (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Error appending file 1 to file 2');
+      }
+      
+      return res.send('File appended successfully!');
+    });
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+
+HTML
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>File Append</title>
+</head>
+<body>
+  <h1>File Append</h1>
+  <form method="POST" action="/append">
+    <label for="file1">File 1:</label>
+    <input type="text" name="file1" id="file1" required>
+    <br>
+    <label for="file2">File 2:</label>
+    <input type="text" name="file2" id="file2" required>
+    <br>
+    <button type="submit">Append Files</button>
+  </form>
+</body>
+</html>
+
+B) Create a Node.js file that open the requested file and returns the content to the
+   client. If anything goes wrong, throw a 404 error
+Ans
+ 
+  const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const server = http.createServer((req, res) => {
+  // Extract the requested file path from the URL
+  const filePath = path.join(__dirname, req.url);
+
+  // Check if the file exists
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      res.statusCode = 404;
+      res.end('File not found');
+    } else {
+      // Read the file and send its content as the response
+      fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+          res.statusCode = 404;
+          res.end('Error reading file');
+        } else {
+          res.setHeader('Content-Type', 'text/plain');
+          res.end(data);
+        }
+      });
+    }
+  });
+});
+
+const port = 3000;
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+
+
+
+                                 
+------------------------------------------------------------------------ Slip 2  ---------------------------------------------------------------------------------------
+
+
+
+1) Write a C program to create ‘n’ child processes. When all ‘n’ child processes
+   terminates, display total cumulative time children spent in user and kernel mode.
+Ans 
+  #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[])
+{
+    int n = atoi(argv[1]);
+    pid_t pid;
+    clock_t start, end;
+    double total_user_time = 0.0, total_kernel_time = 0.0;
+
+    for (int i = 0; i < n; i++)
+    {
+        pid = fork();
+        if (pid == -1)
+        {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0)
+        {
+            // child process
+            printf("Child process %d starting\n", i);
+            start = clock();
+
+            // simulate some work being done
+            for (int j = 0; j < 100000000; j++)
+            {
+                int k = j * j;
+            }
+
+            end = clock();
+            printf("Child process %d finished\n", i);
+            printf("User time: %f seconds\n", ((double) (end - start)) / CLOCKS_PER_SEC);
+            printf("Kernel time: %f seconds\n", ((double) (end - start)) / CLOCKS_PER_SEC);
+            exit(EXIT_SUCCESS);
+        }
+    }
+
+    // parent process
+    int status;
+    pid_t wpid;
+    while ((wpid = waitpid(-1, &status, 0)) > 0)
+    {
+        printf("Child process %d terminated\n", wpid);
+        total_user_time += ((double) (clock() - start)) / CLOCKS_PER_SEC;
+        total_kernel_time += ((double) (clock() - start)) / CLOCKS_PER_SEC;
+    }
+
+    printf("Total user time: %f seconds\n", total_user_time);
+    printf("Total kernel time: %f seconds\n", total_kernel_time);
+
+    return 0;
+}
+
+
+2) 
+
+
+3) Write node js program create a User Login System. If username and password is same
+   then throw message is “login successfully” otherwise throw error message “login fail “using
+   then and catch method.
+Ans
+ 
+  // Simulated user credentials
+const username = "admin";
+const password = "admin";
+
+// Function to simulate a login request
+function login(username, password) {
+  return new Promise((resolve, reject) => {
+    if (username === password) {
+      resolve("Login successful");
+    } else {
+      reject("Login failed");
+    }
+  });
+}
+
+// Usage example
+login(username, password)
+  .then((message) => {
+    console.log(message);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+
+
+
+ ------------------------------------------------------------------------slip 3----------------------------------------------------------------------------
+
+
+
+
+1)  Write a C program to find properties of file such as inode number, number of hard link,
+    File permissions, File size, of a given file using fstat() system call.
+Ans 
+  
+
+   #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main() {
+    char filename[100];
+    struct stat fileStat;
+
+    printf("Enter the filename: ");
+    scanf("%s", filename);
+
+    // Get file properties using fstat
+    if (stat(filename, &fileStat) == -1) {
+        perror("Error");
+        return 1;
+    }
+
+    // Print file properties
+    printf("File properties:\n");
+    printf("Inode number: %ld\n", fileStat.st_ino);
+    printf("Number of hard links: %ld\n", fileStat.st_nlink);
+    printf("File permissions: %o\n", fileStat.st_mode);
+    printf("File size: %ld bytes\n", fileStat.st_size);
+
+    return 0;
+}
+
+
+2) Create sample application with login module (Check username and password). On 
+   successful login, pass username to next screen and on failing login, alert userusing
+  Toast.
+
+Ans 
+
+  XML
+
+ <?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="16dp"
+    android:paddingTop="16dp"
+    android:paddingRight="16dp"
+    android:paddingBottom="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textSize="24sp"
+        android:text="Login" />
+
+    <EditText
+        android:id="@+id/editTextUsername"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textView"
+        android:hint="Username"
+        android:inputType="text" />
+
+    <EditText
+        android:id="@+id/editTextPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/editTextUsername"
+        android:hint="Password"
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/buttonLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/editTextPassword"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="Login" />
+
+</RelativeLayout>
+
+
+  --java--
+
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+
+    private EditText editTextUsername, editTextPassword;
+    private Button buttonLogin;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        editTextUsername = findViewById(R.id.editTextUsername);
+        editTextPassword = findViewById(R.id.editTextPassword);
+        buttonLogin = findViewById(R.id.buttonLogin);
+
+        buttonLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String username = editTextUsername.getText().toString();
+                String password = editTextPassword.getText().toString();
+
+                // Check username and password
+                if (username.equals(password)) {
+                    // Successful login
+                    showToast("Login successful!");
+
+                    // Pass the username to the next screen (you can implement your logic here)
+                    // For now, we'll just display it in a toast message
+                    showToast("Username: " + username);
+                } else {
+                    // Failed login
+                    showToast("Login failed!");
+                }
+
+                // Clear the input fields
+                editTextUsername.setText("");
+                editTextPassword.setText("");
+            }
+        });
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+}
+
+
+3) Write a node js program to displaying the user's name, convert it to upper case letters.
+  For example, if the user's name is Raj, then display greet message as "Hello, RAJ, nice to
+  meet you!"
+Ans
+
+  const readline = require('readline');
+
+// Create an interface to read user input
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Prompt the user for their name
+rl.question("Enter your name: ", (name) => {
+  // Convert the name to uppercase
+  const uppercaseName = name.toUpperCase();
+
+  // Display the greeting message
+  console.log(`Hello, ${uppercaseName}, nice to meet you!`);
+
+  // Close the readline interface
+  rl.close();
+});
+
+
+
+
+--------------------------------------------------------------------------slip 4------------------------------------------------------------------------
+
+
+1) Write a C program to create an unnamed pipe. The child process will write following
+   three messages to pipe and parent process will read and display themdisplay it.
+   Message1 = “Hello World”
+   Message2 = “Hello SPPU”
+   Message3 = “Linux is Funny”
+
+Ans
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define BUFFER_SIZE 100
+
+int main() {
+    int pipefd[2];
+    pid_t pid;
+    char buffer[BUFFER_SIZE];
+
+    // Create the pipe
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return 1;
+    }
+
+    // Fork the process
+    pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        return 1;
+    }
+
+    if (pid == 0) {
+        // Child process
+        close(pipefd[0]); // Close the read end of the pipe
+
+        // Messages to write
+        char *messages[3] = {
+            "Hello World",
+            "Hello SPPU",
+            "Linux is Funny"
+        };
+
+        // Write the messages to the pipe
+        for (int i = 0; i < 3; i++) {
+            write(pipefd[1], messages[i], strlen(messages[i]));
+            sleep(1); // Sleep for a second between messages
+        }
+
+        close(pipefd[1]); // Close the write end of the pipe
+    } else {
+        // Parent process
+        close(pipefd[1]); // Close the write end of the pipe
+
+        // Read and display the messages from the pipe
+        while (read(pipefd[0], buffer, BUFFER_SIZE) > 0) {
+            printf("Received message: %s\n", buffer);
+        }
+
+        close(pipefd[0]); // Close the read end of the pipe
+    }
+
+    return 0;
+}
+
+
+2) Create table Student (id, name, address, phno). Create application for performing the
+  following operation on the table.
+  i) Insert new student details.
+  ii) Show all the students details. 
+
+Ans
+
+  
+---XML---
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/editTextId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="ID" />
+
+    <EditText
+        android:id="@+id/editTextName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Name" />
+
+    <EditText
+        android:id="@+id/editTextAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Address" />
+
+    <EditText
+        android:id="@+id/editTextPhno"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Phone Number" />
+
+    <Button
+        android:id="@+id/buttonInsert"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Insert" />
+
+    <Button
+        android:id="@+id/buttonShowAll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show All" />
+
+    <TextView
+        android:id="@+id/textViewOutput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textAppearance="?android:textAppearanceMedium" />
+
+</LinearLayout>
+
+--java--
+
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    private EditText editTextId, editTextName, editTextAddress, editTextPhno;
+    private Button buttonInsert, buttonShowAll;
+    private TextView textViewOutput;
+    private SQLiteDatabase db;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        editTextId = findViewById(R.id.editTextId);
+        editTextName = findViewById(R.id.editTextName);
+        editTextAddress = findViewById(R.id.editTextAddress);
+        editTextPhno = findViewById(R.id.editTextPhno);
+        buttonInsert = findViewById(R.id.buttonInsert);
+        buttonShowAll = findViewById(R.id.buttonShowAll);
+        textViewOutput = findViewById(R.id.textViewOutput);
+
+        // Create or open the database
+        db = openOrCreateDatabase("StudentDB", MODE_PRIVATE, null);
+
+        // Create the Student table if it doesn't exist
+        db.execSQL("CREATE TABLE IF NOT EXISTS Student (id INTEGER PRIMARY KEY, name TEXT, address TEXT, phno TEXT)");
+
+        buttonInsert.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Get the input values
+                String id
+
+
+
+3) Write a program using node js create eLearning System. Using different routing in
+   express js(Student, Course)
+Ans
+
+  const express = require('express');
+const app = express();
+
+// Route for /student
+app.get('/student', (req, res) => {
+  res.send('Welcome to the Student section of the eLearning system!');
+});
+
+// Route for /course
+app.get('/course', (req, res) => {
+  res.send('Welcome to the Course section of the eLearning system!');
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+
+
+
+----------------------------------------------------------------------------slip 5-------------------------------------------------------------------------------------
+
+
+
+1) Write a C program to read all filenames in the current directory and display the inode
+   number, number of links and size of each of the file.
+
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+int main() {
+    DIR *directory;
+    struct dirent *entry;
+    struct stat fileStat;
+
+    // Open the current directory
+    directory = opendir(".");
+
+    if (directory == NULL) {
+        perror("opendir");
+        return 1;
+    }
+
+    // Read each entry in the directory
+    while ((entry = readdir(directory)) != NULL) {
+        if (stat(entry->d_name, &fileStat) < 0) {
+            perror("stat");
+            return 1;
+        }
+
+        // Display the file details
+        printf("Filename: %s\n", entry->d_name);
+        printf("Inode number: %ld\n", fileStat.st_ino);
+        printf("Number of links: %ld\n", fileStat.st_nlink);
+        printf("File size: %ld bytes\n", fileStat.st_size);
+        printf("\n");
+    }
+
+    // Close the directory
+    closedir(directory);
+
+    return 0;
+}
+
+
+
+2) Create an android application that demonstrate WebView.
+Ans
+
+  
+
+
+
+----------------------------------------------------------------------------slip 6--------------------------------------------------------------
+
+
+
+1) Write a C program to create a file with hole in it. Read the file and show what data is read
+   when the process reads at the offsets corresponding to hole.
+Ans
+ 
+  
+
+2) Create an application to accept two numbers from the user, and displays them, but reject
+   input if both numbers are greater than 10 and asks for two new numbers.
+Ans
+  
+ XML
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/number1EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Number 1"
+        android:inputType="number" />
+
+    <EditText
+        android:id="@+id/number2EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Number 2"
+        android:inputType="number" />
+
+</LinearLayout>
+
+
+JAVA
+
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    private EditText number1EditText;
+    private EditText number2EditText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        number1EditText = findViewById(R.id.number1EditText);
+        number2EditText = findViewById(R.id.number2EditText);
+
+        showInputDialog();
+    }
+
+    private void showInputDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Enter Numbers");
+
+        builder.setView(R.layout.dialog_input);
+
+        builder.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int number1 = Integer.parseInt(number1EditText.getText().toString());
+                int number2 = Integer.parseInt(number2EditText.getText().toString());
+
+                if (number1 > 10 && number2 > 10) {
+                    Toast.makeText(MainActivity.this, "Both numbers are greater than 10. Please try again.", Toast.LENGTH_SHORT).show();
+                    showInputDialog();
+                } else {
+                    displayNumbers(number1, number2);
+                }
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+    private void displayNumbers(int number1, int number2) {
+        Toast.makeText(MainActivity.this, "Number 1: " + number1 + "\nNumber 2: " + number2, Toast.LENGTH_SHORT).show();
+    }
+}
+
+
+3) Write a program for Movie Database Creating Collections Film and Actor and inserting
+   documents in both the collections.
+Ans 
+
+  const MongoClient = require('mongodb').MongoClient;
+
+// Connection URL
+const url = 'mongodb://localhost:27017';
+
+// Database Name
+const dbName = 'movieDatabase';
+
+// Create a new MongoClient
+const client = new MongoClient(url);
+
+// Sample film and actor data
+const films = [
+  {
+    title: 'The Shawshank Redemption',
+    year: 1994,
+    director: 'Frank Darabont',
+    actors: ['Tim Robbins', 'Morgan Freeman']
+  },
+  {
+    title: 'The Godfather',
+    year: 1972,
+    director: 'Francis Ford Coppola',
+    actors: ['Marlon Brando', 'Al Pacino']
+  }
+];
+
+const actors = [
+  { name: 'Tim Robbins', birthYear: 1958 },
+  { name: 'Morgan Freeman', birthYear: 1937 },
+  { name: 'Marlon Brando', birthYear: 1924 },
+  { name: 'Al Pacino', birthYear: 1940 }
+];
+
+// Connect to the MongoDB server
+client.connect(function(err) {
+  if (err) {
+    console.error('Error connecting to MongoDB:', err);
+    return;
+  }
+
+  console.log('Connected successfully to MongoDB');
+
+  const db = client.db(dbName);
+
+  // Create a collection for films
+  const filmsCollection = db.collection('films');
+
+  // Insert film documents
+  filmsCollection.insertMany(films, function(err, result) {
+    if (err) {
+      console.error('Error inserting film documents:', err);
+      return;
+    }
+
+    console.log(`${result.insertedCount} film documents inserted`);
+
+    // Create a collection for actors
+    const actorsCollection = db.collection('actors');
+
+    // Insert actor documents
+    actorsCollection.insertMany(actors, function(err, result) {
+      if (err) {
+        console.error('Error inserting actor documents:', err);
+        return;
+      }
+
+      console.log(`${result.insertedCount} actor documents inserted`);
+
+      // Close the MongoDB connection
+      client.close();
+    });
+  });
+});
+
+
+------------------------------------------------------------------------slip 7-------------------------------------------------------------------------
+
+
+
+1) Write a C program to read all filenames in the current directory and display the names of
+   those regular files on which the user has “write” permission.
+
+Ans
+
+  #include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main() {
+    DIR *dir;
+    struct dirent *entry;
+    struct stat fileStat;
+    
+    // Open current directory
+    dir = opendir(".");
+    if (dir == NULL) {
+        printf("Error opening current directory.\n");
+        return 1;
+    }
+    
+    // Read directory entries
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {  // Check if regular file
+            stat(entry->d_name, &fileStat);
+            
+            // Check write permission for the user
+            if (access(entry->d_name, W_OK) == 0) {
+                printf("%s\n", entry->d_name);
+            }
+        }
+    }
+    
+    // Close directory
+    closedir(dir);
+    
+    return 0;
+}
+
+
+2) Create first activity to accept information like Student First Name, Middle Name, Last
+   Name, Date of birth, Address, Email ID and display all information on second activity
+   when user click on submit button. 
+Ans
+
+  
+3) Write queries on Company Database. Creating collections ‘Product’ and ‘service’
+   company insert documents in both the collections. Find Document which is ‘Product’
+   company name =” TCS”.
+Ans
+
+
+
+-----------------------------------------------------------------------------slip 8----------------------------------------------------------------------
+
+
+
+1) Write a C program which receives file names as command line arguments and display
+   the filenames in ascending order of their sizes.
+Ans
+#include<stdlib.h>
+#include<stdio.h>
+#include<string.h>
+#include<sys/stat.h>
+int main(int ac,char *av[])
+{
+int i;
+int max=0;
+struct stat s;
+if(ac<2)
+{
+printf("no commandline arg passed");
+return 0;
+}
+else
+{
+ for(i=1;i<=ac;i++)
+  {
+   stat(av[i],&s);
+    int size=s.st_size;
+
+    if(size>max)
+   {
+    max=size;
+    printf("size of file %s=%ld\n",av[i],max);
+}
+}
+}
+}
+
+
+2) Create an android application to accept a number and calculate factorial and sum of
+   digits of number using Context Menu.
+Ans
+
+  
+3) Write node js script to interact with the filesystem, and serve a web page from a file
+Ans
+
+   
+
+-------------------------------------------------------------------------------------------slip 9-----------------------------------------------------------------
+
+
+
+1) Write a C program that will print list all subdirectories in current directory.
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+int main()
+{
+    DIR *dir;
+    struct dirent *ent;
+    struct stat st;
+    char *cwd = ".";
+
+    if ((dir = opendir(cwd)) == NULL) {
+        perror("opendir error");
+        exit(1);
+    }
+
+    while ((ent = readdir(dir)) != NULL) {
+        char *filename = ent->d_name;
+
+        if (stat(filename, &st) == -1) {
+            perror("stat error");
+            exit(1);
+        }
+
+        if (S_ISDIR(st.st_mode) && strcmp(filename, ".") != 0 && strcmp(filename, "..") != 0) {
+            printf("%s\n", filename);
+        }
+    }
+
+    closedir(dir);
+
+    return 0;
+}
+
+
+2) Create an android application to accept two numbers and find power and average.
+ Display the result on the next activity using Option Menu. 
+Ans 
+
+   XML
+
+ <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_item_share"
+        android:title="Share"
+        android:icon="@drawable/ic_share"
+        android:showAsAction="ifRoom" />
+</menu>
+
+
+JAVA
+
+  import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.TextView;
+
+public class ResultActivity extends AppCompatActivity {
+
+    private TextView powerTextView, averageTextView;
+    private double power, average;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_result);
+
+        powerTextView = findViewById(R.id.powerTextView);
+        averageTextView = findViewById(R.id.averageTextView);
+
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            power = extras.getDouble("power");
+            average = extras.getDouble("average");
+        }
+
+        displayResults();
+    }
+
+    private void displayResults() {
+        powerTextView.setText("Power: " + String.valueOf(power));
+        averageTextView.setText("Average: " + String.valueOf(average));
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.options_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.menu_item_share) {
+            // Handle the share option
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+}
+
+
+3) Write a program for node js create student database, Creating Collections UG and PG
+   and inserting documents in both the collections using mongoose schema
+Ans
+
+ // import required modules
+const mongoose = require('mongoose');
+
+// connect to the MongoDB database
+mongoose.connect('mongodb://localhost/students', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+// define the schema for the UG collection
+const ugSchema = new mongoose.Schema({
+  name: String,
+  rollNo: String,
+  batch: String,
+  department: String,
+  cgpa: Number
+});
+
+// create the UG collection model
+const UG = mongoose.model('UG', ugSchema);
+
+// define the schema for the PG collection
+const pgSchema = new mongoose.Schema({
+  name: String,
+  rollNo: String,
+  batch: String,
+  department: String,
+  percentage: Number
+});
+
+// create the PG collection model
+const PG = mongoose.model('PG', pgSchema);
+
+// create a new document in the UG collection
+const ugStudent = new UG({
+  name: 'John Doe',
+  rollNo: 'UG001',
+  batch: '2023',
+  department: 'Computer Science',
+  cgpa: 8.5
+});
+
+// save the UG student document to the database
+ugStudent.save()
+  .then((result) => {
+    console.log(result);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+
+// create a new document in the PG collection
+const pgStudent = new PG({
+  name: 'Jane Smith',
+  rollNo: 'PG001',
+  batch: '2022',
+  department: 'Electrical Engineering',
+  percentage: 85
+});
+
+// save the PG student document to the database
+pgStudent.save()
+  .then((result) => {
+    console.log(result);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+
+
+----------------------------------------------------------------------------slip 10--------------------------------------------------------------
+
+
+
+1)Write a C program that redirects standard output to a file output.txt. (use dup and open
+ system calls).
+Ans 
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main()
+{
+    int fd, saved_stdout;
+
+    saved_stdout = dup(STDOUT_FILENO); // save the current standard output
+    fd = open("output1.txt", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR); // open the output file
+
+    if (fd == -1) {
+        perror("open error");
+        exit(1);
+    }
+
+    if (dup2(fd, STDOUT_FILENO) == -1) { // redirect the standard output to the output file
+        perror("dup2 error");
+        exit(1);
+    }
+
+    printf("This message will be written to output.txt.\n");
+
+    if (dup2(saved_stdout, STDOUT_FILENO) == -1) { // restore the standard output
+        perror("dup2 error");
+        exit(1);
+    }
+
+    printf("This message will be written to the console.\n");
+
+    close(fd);
+
+    return 0;
+}
+
+
+2)Create sample application with login module. (Hint: Use Login (username, password) Table.) 
+Ans 
+
+  XML
+
+  <activity
+    android:name=".HomeActivity"
+    android:label="@string/app_name">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+
+
+JAVA
+
+  import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+
+    private EditText usernameEditText, passwordEditText;
+    private Button loginButton;
+
+    // Define sample login credentials
+    private static final String SAMPLE_USERNAME = "admin";
+    private static final String SAMPLE_PASSWORD = "password";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        usernameEditText = findViewById(R.id.usernameEditText);
+        passwordEditText = findViewById(R.id.passwordEditText);
+        loginButton = findViewById(R.id.loginButton);
+
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String enteredUsername = usernameEditText.getText().toString();
+                String enteredPassword = passwordEditText.getText().toString();
+
+                // Validate login credentials
+                if (enteredUsername.equals(SAMPLE_USERNAME) && enteredPassword.equals(SAMPLE_PASSWORD)) {
+                    // Successful login, launch the next activity
+                    Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    // Invalid login, show error message
+                    Toast.makeText(MainActivity.this, "Invalid username or password", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+}
+
+
+3) Write a program for node js on bus database. Creating Collections bus-depo and busroute inserting documents in both the collections using mongoose schema
+ Ans
+
+  const mongoose = require('mongoose');
+
+// connect to database
+mongoose.connect('mongodb://localhost/busdb', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB...'))
+  .catch(err => console.error('Could not connect to MongoDB...', err));
+
+// define schema for bus depo
+const busDepoSchema = new mongoose.Schema({
+  name: String,
+  location: String,
+  capacity: Number
+});
+
+// define schema for bus route
+const busRouteSchema = new mongoose.Schema({
+  routeNumber: Number,
+  startingPoint: String,
+  endingPoint: String,
+  distance: Number,
+  depo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'BusDepo'
+  }
+});
+
+// create models for bus depo and bus route
+const BusDepo = mongoose.model('BusDepo', busDepoSchema);
+const BusRoute = mongoose.model('BusRoute', busRouteSchema);
+
+// create a new bus depo and save to database
+const busDepo = new BusDepo({
+  name: 'ABC Bus Depo',
+  location: 'XYZ Street',
+  capacity: 50
+});
+busDepo.save();
+
+// create a new bus route and save to database
+const busRoute = new BusRoute({
+  routeNumber: 1,
+  startingPoint: 'Point A',
+  endingPoint: 'Point B',
+  distance: 10,
+  depo: busDepo._id
+});
+busRoute.save();
+
+
+
+
+-------------------------------------------------------------------------slip 11----------------------------------------------------------------------
+
+
+
+1) Write a C program to Identify the type (Directory, character device, Block device,
+   Regular file, FIFO or pipe, symbolic link or socket) of files given as command line
+   arguments.(use stat() system call).
+
+Ans 
+  #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+void identifyFileType(const char *filename) {
+    struct stat fileStat;
+
+    // Use stat to get file information
+    if (stat(filename, &fileStat) == -1) {
+        perror("Failed to get file information");
+        return;
+    }
+
+    // Check the file type
+    if (S_ISREG(fileStat.st_mode)) {
+        printf("%s is a regular file\n", filename);
+    } else if (S_ISDIR(fileStat.st_mode)) {
+        printf("%s is a directory\n", filename);
+    } else if (S_ISCHR(fileStat.st_mode)) {
+        printf("%s is a character device\n", filename);
+    } else if (S_ISBLK(fileStat.st_mode)) {
+        printf("%s is a block device\n", filename);
+    } else if (S_ISFIFO(fileStat.st_mode)) {
+        printf("%s is a FIFO or pipe\n", filename);
+    } else if (S_ISLNK(fileStat.st_mode)) {
+        printf("%s is a symbolic link\n", filename);
+    } else if (S_ISSOCK(fileStat.st_mode)) {
+        printf("%s is a socket\n", filename);
+    } else {
+        printf("%s is an unknown file type\n", filename);
+    }
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: ./file_type <file1> [file2] [file3] ...\n");
+        return 1;
+    }
+
+    for (int i = 1; i < argc; i++) {
+        identifyFileType(argv[i]);
+    }
+
+    return 0;
+}
+
+
+2) Create an android application that plays an audio(song) in the background. Audio will
+  not be stopped even if you switch to another activity. To stop the audio, you need to stop
+  the service. 
+
+Ans
+  XML
+ 
+
+  <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/stopButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop Audio" />
+
+</LinearLayout>
+
+
+JAVA  
+
+  import android.app.Notification;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.media.MediaPlayer;
+import android.os.Binder;
+import android.os.IBinder;
+
+public class AudioService extends Service {
+
+    private MediaPlayer mediaPlayer;
+    private final IBinder binder = new AudioBinder();
+
+    public class AudioBinder extends Binder {
+        AudioService getService() {
+            return AudioService.this;
+        }
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.song);
+        mediaPlayer.setLooping(true);
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        showNotification();
+
+        mediaPlayer.start();
+
+        return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+        }
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return binder;
+    }
+
+    private void showNotification() {
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        Notification notification = new Notification.Builder(this)
+                .setContentTitle("Background Audio")
+                .setContentText("Playing in the background")
+                .setSmallIcon(R.drawable.ic_music_note)
+                .setContentIntent(pendingIntent)
+                .build();
+
+        startForeground(1, notification);
+    }
+}
+
+3) a) Using node js create a web page to read two file names from user and append
+   contents of first file into second file. [10]
+   b) Create a Node.js file that open the requested file and returns the content to the
+  client. If anything goes wrong, throw a 404 error.
+
+Ans 
+ A)
+ const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+app.use(express.urlencoded({ extended: true }));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.post('/appendFiles', (req, res) => {
+  const file1 = req.body.file1;
+  const file2 = req.body.file2;
+
+  fs.readFile(file1, 'utf8', (err, data) => {
+    if (err) {
+      console.error(`Error reading file ${file1}: ${err}`);
+      return res.status(500).send(`Error reading file ${file1}`);
+    }
+
+    fs.appendFile(file2, data, (err) => {
+      if (err) {
+        console.error(`Error appending data to file ${file2}: ${err}`);
+        return res.status(500).send(`Error appending data to file ${file2}`);
+      }
+
+      console.log(`Data from file ${file1} appended to file ${file2}`);
+      res.status(200).send(`Data from file ${file1} appended to file ${file2}`);
+    });
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+B)
+ const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const server = http.createServer((req, res) => {
+  let filePath = '.' + req.url;
+  if (filePath == './') {
+    filePath = './index.html';
+  }
+
+  const extname = String(path.extname(filePath)).toLowerCase();
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.wav': 'audio/wav',
+    '.mp4': 'video/mp4',
+    '.woff': 'application/font-woff',
+    '.ttf': 'application/font-ttf',
+    '.eot': 'application/vnd.ms-fontobject',
+    '.otf': 'application/font-otf',
+    '.wasm': 'application/wasm'
+  };
+
+  const contentType = mimeTypes[extname] || 'application/octet-stream';
+
+  fs.readFile(filePath, function(error, content) {
+    if (error) {
+      if (error.code == 'ENOENT') {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end('<h1>404 Not Found</h1><p>The requested file was not found.</p>');
+      } else {
+        res.writeHead(500);
+        res.end(`Internal Server Error: ${error.code}`);
+      }
+    } else {
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(content, 'utf-8');
+    }
+  });
+});
+
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+----------------------------------------------------------------------------------slip 12----------------------------------------------------------------------
+
+
+
+
+1)  Write a C program to move the content of file1.txt to file2.txt, remove the file file1.txt
+    from directory and rename file2.txt as file1.txt.
+Ans 
+
+
+  #include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    FILE *file1, *file2;
+    int c;
+
+    // open file1 for reading
+    file1 = fopen("file1.txt", "r");
+    if (file1 == NULL) {
+        perror("file1.txt open error");
+        exit(1);
+    }
+
+    // open file2 for writing
+    file2 = fopen("file2.txt", "w");
+    if (file2 == NULL) {
+        perror("file2.txt open error");
+        exit(1);
+    }
+
+    // copy the contents of file1 to file2
+    while ((c = getc(file1)) != EOF) {
+        putc(c, file2);
+    }
+
+    // close the files
+    fclose(file1);
+    fclose(file2);
+
+    // remove file1
+    if (remove("file1.txt") == -1) {
+        perror("file1.txt remove error");
+        exit(1);
+    }
+
+    // rename file2 to file1
+    if (rename("file2.txt", "file1.txt") == -1) {
+        perror("file2.txt rename error");
+        exit(1);
+    }
+
+    printf("Content of file1.txt moved to file2.txt, file1.txt removed, and file2.txt renamed to file1.txt.\n");
+
+    return 0;
+}
+
+
+2) Create an android application to accept a number and check it is palindrome or not.
+   Display the result on Alert Box
+Ans      
+
+
+XML 
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/numberEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter a number" />
+
+    <Button
+        android:id="@+id/checkButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/numberEditText"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="Check Palindrome" />
+
+</RelativeLayout>
+
+
+JAVA
+
+ import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+
+public class MainActivity extends AppCompatActivity {
+
+    private EditText numberEditText;
+    private Button checkButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        numberEditText = findViewById(R.id.numberEditText);
+        checkButton = findViewById(R.id.checkButton);
+
+        checkButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String numberString = numberEditText.getText().toString();
+                if (isPalindrome(numberString)) {
+                    showAlertDialog("Palindrome", numberString + " is a palindrome.");
+                } else {
+                    showAlertDialog("Not Palindrome", numberString + " is not a palindrome.");
+                }
+            }
+        });
+    }
+
+    private boolean isPalindrome(String numberString) {
+        int length = numberString.length();
+        for (int i = 0; i < length / 2; i++) {
+            if (numberString.charAt(i) != numberString.charAt(length - i - 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void showAlertDialog(String title, String message) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .show();
+    }
+}
+
+
+3) Write a node js program accept the details of Teacher (tno, tname, subject).Insert at least
+  5 documents into Teacher collection. Display the details of teacher who is teaching
+   “JAVA ”Subject.(Using MongoDB ). 
+
+Ans 
+
+ const mongoose = require('mongoose');
+
+// connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/teacherdb', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB...'))
+  .catch(err => console.error('Could not connect to MongoDB...', err));
+
+// create teacher schema
+const teacherSchema = new mongoose.Schema({
+  tno: String,
+  tname: String,
+  subject: String
+});
+
+// create Teacher model
+const Teacher = mongoose.model('Teacher', teacherSchema);
+
+// insert teachers into Teacher collection
+async function insertTeachers() {
+  const teachers = [
+    { tno: '001', tname: 'John Smith', subject: 'JAVA' },
+    { tno: '002', tname: 'Jane Doe', subject: 'Python' },
+    { tno: '003', tname: 'Bob Johnson', subject: 'C++' },
+    { tno: '004', tname: 'Alice Lee', subject: 'JAVA' },
+    { tno: '005', tname: 'Mike Chen', subject: 'JavaScript' }
+  ];
+
+  const result = await Teacher.insertMany(teachers);
+  console.log(result);
+}
+
+// display teacher who is teaching "JAVA" subject
+async function displayJavaTeacher() {
+  const javaTeacher = await Teacher.find({ subject: 'JAVA' });
+  console.log(javaTeacher);
+}
+
+// call insertTeachers function to insert teachers into Teacher collection
+insertTeachers();
+
+// call displayJavaTeacher function to display teacher who is teaching "JAVA" subject
+displayJavaTeacher();
+
+
+---------------------------------------------------------------------------------slip 13-----------------------------------------------------------------------------
+
+
+
+1) Write a C program in which process creates a child process, which executes a linux/ unix
+  command or any user defined program. Which is apassed as command line argument.
+  The parent process waits till child process excutes. When child process completes its
+   execution, parent prints pid and exit status of chils and its own pid and then terminates.
+
+Ans
+
+   #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    pid_t pid;
+    int status;
+
+    if (argc < 2) {
+        printf("Usage: %s command [arguments]\n", argv[0]);
+        exit(1);
+    }
+
+    pid = fork();
+
+    if (pid < 0) {
+        perror("fork error");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        // child process
+        if (execvp(argv[1], &argv[1]) < 0) {
+            perror("exec error");
+            exit(1);
+        }
+    } else {
+        // parent process
+        wait(&status);
+        printf("Child process %d exited with status %d.\n", pid, WEXITSTATUS(status));
+        printf("Parent process %d exited.\n", getpid());
+        exit(0);
+    }
+
+    return 0;
+}
+	
+
+2) Create an android application that demonstrate all basic Views.
+
+Ans 
+
+XML
+  
+  <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="EditText" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button" />
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher_background" />
+
+    <RadioButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RadioButton" />
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CheckBox" />
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/spinner_items" />
+
+</LinearLayout>
+
+
+JAVA
+
+ import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.Spinner;
+import android.widget.TextView;
+
+public class MainActivity extends AppCompatActivity {
+
+    private TextView textView;
+    private EditText editText;
+    private Button button;
+    private ImageView imageView;
+    private RadioButton radioButton;
+    private CheckBox checkBox;
+    private Spinner spinner;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        textView = findViewById(R.id.textView);
+        editText = findViewById(R.id.editText);
+        button = findViewById(R.id.button);
+        imageView = findViewById(R.id.imageView);
+        radioButton = findViewById(R.id.radioButton);
+        checkBox = findViewById(R.id.checkBox);
+        spinner = findViewById(R.id.spinner);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Perform actions when the button is clicked
+            }
+        });
+
+        // Set up other views and their respective event listeners as needed
+    }
+}
+
+ 
+
+
+3) Write a program for node js on bus database. Creating Collections bus-depo and busroute and inserting documents in both the collections using mongoose schema. Find the
+   name of bus whose route is “Pune to Satara”. 
+
+Ans
+ const mongoose = require('mongoose');
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost/bus-db', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB...'))
+  .catch(err => console.error('Could not connect to MongoDB...', err));
+
+// Define the schema for bus-depo
+const busDepoSchema = new mongoose.Schema({
+  name: String,
+  location: String
+});
+
+// Define the schema for busroute
+const busRouteSchema = new mongoose.Schema({
+  name: String,
+  route: String,
+  distance: Number
+});
+
+// Create bus-depo and busroute models
+const BusDepo = mongoose.model('bus-depo', busDepoSchema);
+const BusRoute = mongoose.model('busroute', busRouteSchema);
+
+// Insert documents into bus-depo collection
+const busDepo = new BusDepo({
+  name: 'ABC Bus Depo',
+  location: 'Pune'
+});
+busDepo.save()
+  .then(() => console.log('Document saved in bus-depo collection...'))
+  .catch(err => console.error('Could not save document in bus-depo collection...', err));
+
+// Insert documents into busroute collection
+const busRoute = new BusRoute({
+  name: 'ABC Bus',
+  route: 'Pune to Satara',
+  distance: 120
+});
+busRoute.save()
+  .then(() => console.log('Document saved in busroute collection...'))
+  .catch(err => console.error('Could not save document in busroute collection...', err));
+
+// Find the name of bus whose route is "Pune to Satara"
+BusRoute.findOne({ route: 'Pune to Satara' }, 'name')
+  .then(bus => console.log(`Bus name: ${bus.name}`))
+  .catch(err => console.error('Could not find bus...', err));
+
+
+
+--------------------------------------------------------------------------------slip 14--------------------------------------------------------------------------------
+
+
+
+1) Write a C program to illustrate execution of atexit() function. Create two user defined
+functions. Register first function with atexit(), then register second function and then first
+again. Show how these functions will be excuted.
+
+Ans  
+
+ #include<stdio.h>
+#include<stdlib.h>
+//#include<fntcl.h>
+#include<sys/stat.h>
+void first()
+{
+	printf("U r in 1st\n");
+}
+void second()
+{
+	printf("U r in 2nd\n");
+}
+ int main()
+ {
+
+ 	atexit(first);
+ 	atexit(second);
+  	atexit(first);
+ 	return 0;
+ }
+
+
+2) Create an android application that sends the Notification on click of the button.
+
+Ans 
+ XML
+
+  <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/notificationButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Notification"
+        android:layout_centerInParent="true" />
+
+</RelativeLayout>
+
+
+JAVA
+
+  import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.os.Build;
+import android.support.v4.app.NotificationCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+
+public class MainActivity extends AppCompatActivity {
+
+    private static final String CHANNEL_ID = "notification_channel";
+    private static final int NOTIFICATION_ID = 1;
+
+    private Button notificationButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        notificationButton = findViewById(R.id.notificationButton);
+
+        notificationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendNotification();
+            }
+        });
+
+        createNotificationChannel();
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    private void sendNotification() {
+        Intent intent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("My Notification")
+                .setContentText("This is a notification")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.notify(NOTIFICATION_ID, builder.build());
+    }
+}
+
+
+3) a. Create a Simple Web Server using node js. [10]
+   b. Write Queries on Movie Database. How many actors in the database were born in California?
+
+Ans 
+A) 
+
+ const http = require('http');
+
+// Create a new server object.
+const server = http.createServer((req, res) => {
+  // Send a simple response.
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Hello World!');
+});
+
+// Listen for requests on port 3000.
+server.listen(3000, () => {
+  console.log('Server listening on port 3000');
+});
+
+
+B) 
+
+const db = require('./db');
+
+const query = `
+SELECT COUNT(*) AS total_actors
+FROM actors
+WHERE state = 'CA';
+`;
+
+const results = await db.query(query);
+
+const totalActors = results[0].total_actors;
+
+console.log(`There are ${totalActors} actors in the database who were born in California.`);
+
+
+
+--------------------------------------------------------------------slip 15---------------------------------------------------------------------
+
+
+
+1) Write a C program to print the names of all the files along with their inode, which are
+   created between 1st May 2023 and 15th May 2023.
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <time.h>
+
+int main() {
+    DIR *dir;
+    struct dirent *entry;
+    struct stat file_stat;
+    time_t start_time, end_time;
+
+    start_time = mktime(&(struct tm){.tm_year=123, .tm_mon=4, .tm_mday=1}); // 1st May 2023
+    end_time = mktime(&(struct tm){.tm_year=123, .tm_mon=4, .tm_mday=15}); // 15th May 2023
+
+    dir = opendir(".");
+    if (dir == NULL) {
+        printf("Unable to open directory.");
+        exit(1);
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        stat(entry->d_name, &file_stat);
+        if (S_ISREG(file_stat.st_mode) && file_stat.st_mtime >= start_time && file_stat.st_mtime <= end_time) {
+            printf("%s (inode: %ld)\n", entry->d_name, file_stat.st_ino);
+        }
+    }
+
+    closedir(dir);
+
+    return 0;
+}
+
+
+2) Create an android application for performing the following operation on the table
+Customer (id, name, address).
+i. Insert new customer details.
+ii. Show all the customer details on alert box.
+
+Ans
+
+XML
+
+  <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/addCustomerButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Customer" />
+
+    <Button
+        android:id="@+id/showCustomersButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show Customers" />
+
+</LinearLayout>
+
+3) a. Create a Node.js file that opens the requested file and returns the content to the
+   client. If anything goes wrong, throw a 404 error. [10]
+   b. Assignment on Movie Database Creating Collections Film and inserting
+   documents in both the collections.
+Ans
+
+  A)
+  
+  var http = require('http');
+var url = require('url');
+var fs = require('fs');
+
+http.createServer(function (req, res) {
+  var q = url.parse(req.url, true);
+  var filename = "." + q.pathname;
+
+  try {
+    fs.readFile(filename, function (err, data) {
+      if (err) {
+        res.writeHead(404, {'Content-Type': 'text/html'});
+        return res.end("404 Not Found");
+      }
+      res.writeHead(200, {'Content-Type': 'text/html'});
+      res.write(data);
+      res.end();
+    });
+  } catch (e) {
+    res.writeHead(404, {'Content-Type': 'text/html'});
+    return res.end("404 Not Found");
+  }
+}).listen(8080);
+
+
+B)
+ 
+ // Create a database called "Movies"
+const db = new MongoClient("mongodb://localhost:27017").db("Movies");
+
+// Create a collection called "Films"
+const films = db.collection("Films");
+
+// Add five movies to the "Films" collection
+films.insertMany([
+  {
+    "name": "The Shawshank Redemption",
+    "genre": "Drama",
+    "rating": 9.3
+  },
+  {
+    "name": "The Godfather",
+    "genre": "Crime",
+    "rating": 9.2
+  },
+  {
+    "name": "The Dark Knight",
+    "genre": "Action",
+    "rating": 9.0
+  },
+  {
+    "name": "Pulp Fiction",
+    "genre": "Crime",
+    "rating": 8.9
+  },
+  {
+    "name": "The Lord of the Rings: The Return of the King",
+    "genre": "Fantasy",
+    "rating": 8.9
+  }
+]);
+
+// Create a collection called "Tags"
+const tags = db.collection("Tags");
+
+// Add five tags to the "Tags" collection
+tags.insertMany([
+  {
+    "name": "Action"
+  },
+  {
+    "name": "Crime"
+  },
+  {
+    "name": "Drama"
+  },
+  {
+    "name": "Fantasy"
+  },
+  {
+    "name": "Thriller"
+  }
+]);
+
+// Create a collection called "Ratings"
+const ratings = db.collection("Ratings");
+
+// Add five ratings to the "Ratings" collection
+ratings.insertMany([
+  {
+    "user_id": 1,
+    "movie_id": 1,
+    "rating": 5
+  },
+  {
+    "user_id": 2,
+    "movie_id": 2,
+    "rating": 4
+  },
+  {
+    "user_id": 3,
+    "movie_id": 3,
+    "rating": 3
+  },
+  {
+    "user_id": 4,
+    "movie_id": 4,
+    "rating": 2
+  },
+  {
+    "user_id": 5,
+    "movie_id": 5,
+    "rating": 1
+  }
+]);
+
+
+-------------------------------------------------------------------------------slip 16----------------------------------------------------------
+
+
+
+1) Write a C program which reads all files in the directory, the name of which has been
+passed as command line arguments and display the names of those files having file size
+greater than n (take n as input from user).
+
+Ans
+ 
+  #include<stdio.h>
+#include<stdlib.h>
+#include<dirent.h>
+#include<sys/stat.h>
+#include<time.h>
+#include<fcntl.h>
+int main(int ac,char *av[])
+{
+  int n;
+  struct dirent *d;
+  struct stat s;
+  DIR *dr;
+  if((dr=opendir("."))!=NULL)
+  {
+    printf("Enter file size=");
+    scanf("%d",&n);
+    printf("Files whose size is greater than %d bytes are\n",n);
+    if(dr)
+    {
+      while((d=readdir(dr))!=NULL)
+      {
+	stat(d->d_name,&s);
+	if(s.st_size>n)
+	{
+	  printf("%s\n",d->d_name);
+	}
+      }
+      closedir(dr);
+    }
+  }
+  else
+  {
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
+}
+
+
+2) Create an android application to accept two numbers and find power and average. 
+  Display the result on the next activity on ImageButton click.
+ Ans
+
+  
+ XML
+
+ 1st file 
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/number1EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Number 1" />
+
+    <EditText
+        android:id="@+id/number2EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Number 2" />
+
+    <ImageButton
+        android:id="@+id/calculateButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_calculate"
+        android:contentDescription="Calculate" />
+
+</LinearLayout>
+
+ 2nd file
+  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".ResultActivity">
+
+    <TextView
+        android:id="@+id/powerTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Power: " />
+
+    <TextView
+        android:id="@+id/averageTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Average: " />
+
+</LinearLayout>
+
+JAVA
+
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.widget.TextView;
+
+public class ResultActivity extends AppCompatActivity {
+
+    private TextView powerTextView;
+    private TextView averageTextView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_result);
+
+        powerTextView = findViewById(R.id.powerTextView);
+        averageTextView = findViewById(R.id.averageTextView);
+
+        // Retrieve the calculated power and average values from the intent
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            double power = extras.getDouble("power");
+            double average = extras.getDouble("average");
+
+            // Display the results in the TextViews
+            powerTextView.setText("Power: " + power);
+            averageTextView.setText("Average: " + average);
+        }
+    }
+}
+
+
+
+3)  Write a program for node js to create sign up Form(name, email, password, phone).Insert
+data into database using mongodb.
+Ans
+
+  // Import the necessary modules
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongodb = require('mongodb');
+
+// Create an Express app
+const app = express();
+
+// Configure body parser to parse the HTTP POST data
+app.use(bodyParser.json());
+
+// Create a connection to the MongoDB database
+const mongoClient = new mongodb.MongoClient('mongodb://localhost:27017/mydb');
+
+// Create a route to handle the sign-up form
+app.post('/signup', (req, res) => {
+  // Get the user data from the HTTP POST request
+  const { name, email, password, phone } = req.body;
+
+  // Check if the user name already exists
+  mongoClient.db('mydb').collection('users').findOne({
+    name,
+  }, (err, user) => {
+    if (err) {
+      console.log(err);
+      res.status(500).send('Internal server error');
+    } else if (user) {
+      res.status(409).send('User name already exists');
+    } else {
+      // Create a new user document
+      const newUser = {
+        name,
+        email,
+        password,
+        phone,
+      };
+
+      // Insert the new user document into the database
+      mongoClient.db('mydb').collection('users').insertOne(newUser, (err, result) => {
+        if (err) {
+          console.log(err);
+          res.status(500).send('Internal server error');
+        } else {
+          res.status(201).send('User created successfully');
+        }
+      });
+    }
+  });
+});
+
+// Start the app
+app.listen(3000, () => {
+  console.log('App listening on port 3000');
+});
+
+
+------------------------------------------------------------------------------slip 17-------------------------------------------------------------------------
+
+
+1) Write a C program in which parent and child communicate using unnamed pipe
+Ans 
+
+ #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    int pipefd[2];
+    pid_t pid;
+    char message[] = "Hello, child process!";
+    char buffer[100];
+
+    if (pipe(pipefd) == -1) {
+        printf("Error: Unable to create pipe.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    pid = fork();
+    if (pid == -1) {
+        printf("Error: Unable to create child process.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        close(pipefd[1]);  // Close unused write end of the pipe
+
+        read(pipefd[0], buffer, sizeof(buffer));
+        printf("Child process received message: %s\n", buffer);
+
+        close(pipefd[0]);  // Close read end of the pipe
+        exit(EXIT_SUCCESS);
+    } else {
+        close(pipefd[0]);  // Close unused read end of the pipe
+
+        write(pipefd[1], message, strlen(message));
+        printf("Parent process sent message: %s\n", message);
+
+        close(pipefd[1]);  // Close write end of the pipe
+        wait(NULL);  // Wait for child to terminate
+    }
+
+    return 0;
+}
+
+
+2) ?
+
+
+
+3) Create a node js program get the output of operating system platform and temporary file
+   of operating system. ( using OS module) 
+
+Ans
+
+ const os = require("os");
+
+// Get the operating system platform
+const platform = os.platform();
+
+// Get the temporary file directory
+const tempDir = os.tmpdir();
+
+// Print the output
+console.log(`Operating system platform: ${platform}`);
+console.log(`Temporary file directory: ${tempDir}`);
+
+
+--------------------------------------------------------------------------------slip 18-------------------------------------------------------------------
+
+
+1) Write a C program to create two holes in a file with some data in between two holes.
+Read the contents of the file and display them
+
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main() {
+    int fd;
+    char buffer1[] = "Hello";
+    char buffer2[] = "World";
+    char buffer3[] = "!!!";
+    char read_buffer[20];
+
+    // Open the file for writing
+    fd = open("file.txt", O_WRONLY | O_CREAT, 0666);
+    if (fd == -1) {
+        printf("Error: Unable to open file for writing.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Write the first buffer to the file
+    write(fd, buffer1, sizeof(buffer1));
+
+    // Create a hole in the file by seeking past 100 bytes
+    lseek(fd, 100, SEEK_CUR);
+
+    // Write the second buffer to the file
+    write(fd, buffer2, sizeof(buffer2));
+
+    // Create another hole in the file by seeking past another 100 bytes
+    lseek(fd, 100, SEEK_CUR);
+
+    // Write the third buffer to the file
+    write(fd, buffer3, sizeof(buffer3));
+
+    // Close the file
+    close(fd);
+
+    // Open the file for reading
+    fd = open("file.txt", O_RDONLY);
+    if (fd == -1) {
+        printf("Error: Unable to open file for reading.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read the contents of the file and display them
+    int nbytes = read(fd, read_buffer, sizeof(read_buffer));
+    while (nbytes != 0) {
+        write(STDOUT_FILENO, read_buffer, nbytes);
+        nbytes = read(fd, read_buffer, sizeof(read_buffer));
+    }
+
+    // Close the file
+    close(fd);
+
+    return 0;
+}
+
+
+2) Create an android application to demonstrates Array Adapter using List View to display
+list of fruits.
+
+Ans 
+
+XMl 
+
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <ListView
+        android:id="@+id/fruitsListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>
+
+
+JAVA
+
+ import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends AppCompatActivity {
+
+    private ListView fruitsListView;
+    private String[] fruits = {"Apple", "Banana", "Orange", "Grapes", "Mango", "Strawberry", "Watermelon"};
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        fruitsListView = findViewById(R.id.fruitsListView);
+
+        // Create an ArrayAdapter with the array of fruits
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, fruits);
+
+        // Set the ArrayAdapter as the adapter for the ListView
+        fruitsListView.setAdapter(arrayAdapter);
+    }
+}
+
+
+3) Write node js program create a User Login System. If username and password is same
+then throw message is “login successfully” otherwise throw error message “login fail “using
+then and catch method.
+
+Ans
+   
+const express = require("express");
+const app = express();
+
+// Create a database connection
+const db = require("mysql").createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "login"
+});
+
+// Define a route for the login page
+app.get("/login", (req, res) => {
+  res.render("login.html");
+});
+
+// Define a route for the login action
+app.post("/login", (req, res) => {
+  // Get the username and password from the request
+  const username = req.body.username;
+  const password = req.body.password;
+
+  // Check if the username and password are correct
+  db.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, rows) => {
+    if (err) {
+      console.log(err);
+      res.send("Error: " + err);
+    } else if (rows.length === 0) {
+      res.send("Error: Invalid username or password");
+    } else {
+      res.send("Login successful");
+    }
+  });
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log("Server listening on port 3000");
+})
+
+
+
+-----------------------------------------------------------------------slip 19------------------------------------------------
+
+
+
+1) Write a C program to show how the file read/write offset is shared using dup() system call
+Ans 
+ 
+ #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main() {
+    int fd1, fd2;
+    char buffer[20];
+
+    // Open the file for reading and writing
+    fd1 = open("file.txt", O_RDWR | O_CREAT, 0666);
+    if (fd1 == -1) {
+        printf("Error: Unable to open file for reading and writing.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Duplicate the file descriptor
+    fd2 = dup(fd1);
+
+    // Write some data to the file using the first file descriptor
+    write(fd1, "Hello, world!", 13);
+
+    // Read the data from the file using the second file descriptor
+    lseek(fd2, 0, SEEK_SET);
+    int nbytes = read(fd2, buffer, sizeof(buffer));
+    if (nbytes == -1) {
+        printf("Error: Unable to read from file.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Print the data that was read from the file
+    printf("Data read from file: %.*s\n", nbytes, buffer);
+
+    // Close the file descriptors
+    close(fd1);
+    close(fd2);
+
+    return 0;
+}
+
+2) Create an android application that demonstrate Check Box and Toggle Button.
+Ans
+
+ XML 
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <CheckBox
+        android:id="@+id/checkBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Check Me" />
+
+    <ToggleButton
+        android:id="@+id/toggleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOn="On"
+        android:textOff="Off" />
+
+</LinearLayout>
+
+JAVA
+
+
+ import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.Toast;
+import android.widget.ToggleButton;
+
+public class MainActivity extends AppCompatActivity {
+
+    private CheckBox checkBox;
+    private ToggleButton toggleButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        checkBox = findViewById(R.id.checkBox);
+        toggleButton = findViewById(R.id.toggleButton);
+
+        // Set a listener for the CheckBox
+        checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    showToast("CheckBox Checked");
+                } else {
+                    showToast("CheckBox Unchecked");
+                }
+            }
+        });
+
+        // Set a listener for the ToggleButton
+        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    showToast("ToggleButton On");
+                } else {
+                    showToast("ToggleButton Off");
+                }
+            }
+        });
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+}
+
+
+3) Create a node js program get the output of operating system platform and temporary file
+   of operating system. (using OS module) 
+
+Ans 
+
+const os = require('os');
+
+// Get the operating system platform
+const platform = os.platform();
+
+// Get the temporary file directory
+const tempDir = os.tmpdir();
+
+// Print the output
+console.log(`Operating system platform: ${platform}`);
+console.log(`Temporary file directory: ${tempDir}`);
+
+
+
+----------------------------------------------------------------------------------------slip 20------------------------------------------------------------------------
+
+
+
+1) Write a C program to implement the following unix/linux command (use fork, pipe and execsystem call).
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+    int pipefd[2];
+    pid_t child1, child2;
+
+    // Create the pipe
+    if (pipe(pipefd) == -1) {
+        perror("Pipe creation failed");
+        exit(1);
+    }
+
+    // Fork the first child process (ls command)
+    child1 = fork();
+
+    if (child1 == -1) {
+        perror("Fork failed");
+        exit(1);
+    } else if (child1 == 0) {
+        // Child 1 (ls command)
+        // Close the read end of the pipe
+        close(pipefd[0]);
+
+        // Redirect the write end of the pipe to stdout
+        dup2(pipefd[1], STDOUT_FILENO);
+
+        // Execute the ls command
+        execlp("ls", "ls", NULL);
+
+        // If execlp fails
+        perror("ls execution failed");
+        exit(1);
+    }
+
+    // Fork the second child process (wc command)
+    child2 = fork();
+
+    if (child2 == -1) {
+        perror("Fork failed");
+        exit(1);
+    } else if (child2 == 0) {
+        // Child 2 (wc command)
+        // Close the write end of the pipe
+        close(pipefd[1]);
+
+        // Redirect the read end of the pipe to stdin
+        dup2(pipefd[0], STDIN_FILENO);
+
+        // Execute the wc command
+        execlp("wc", "wc", NULL);
+
+        // If execlp fails
+        perror("wc execution failed");
+        exit(1);
+    }
+
+    // Parent process
+    // Close both ends of the pipe
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    // Wait for both child processes to complete
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
+
+3)FSD 
+
+a. Create node js program get the output of operating system platform and temporary
+  file of operating system (using os module). [10]
+b. Write a program for node js ” Hello ,Welcome in Node js” string is convert into
+   Uppercase using node package manager.
+
+Ans
+
+ A)
+ 
+ const os = require('os');
+
+// Get the operating system platform
+const platform = os.platform();
+
+// Get the temporary file directory
+const tempDir = os.tmpdir();
+
+// Print the output
+console.log(`Operating system platform: ${platform}`);
+console.log(`Temporary file directory: ${tempDir}`);
+
+B) 
+
+ const upperCase = require('upper-case');
+
+const originalString = 'Hello, Welcome in Node js';
+
+const uppercaseString = upperCase(originalString);
+
+console.log(uppercaseString); // HELLO, WELCOME IN NODE JS
+
+
+
+---------------------------------------------------------------------slip 21---------------------------------------------------------
+
+
+
+1) Write a C program to create ‘n’ child processes. When all ‘n’ child processes terminates,
+display total cumulative time children spent in user and kernel mode. 
+
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/times.h>
+
+int main() {
+    int n = 5; // Number of child processes to create
+    int i;
+    pid_t childPid;
+    struct tms start_times, end_times;
+    clock_t start_clock, end_clock;
+    long total_user_time = 0, total_sys_time = 0;
+
+    // Record start times
+    start_clock = times(&start_times);
+
+    for (i = 0; i < n; i++) {
+        childPid = fork();
+
+        if (childPid == -1) {
+            perror("Fork failed");
+            exit(1);
+        } else if (childPid == 0) {
+            // Child process
+            printf("Child process %d\n", i+1);
+            sleep(2); // Simulating some work in child process
+            exit(0);
+        }
+    }
+
+    // Wait for all child processes to terminate
+    while (n > 0) {
+        wait(NULL);
+        n--;
+    }
+
+    // Record end times
+    end_clock = times(&end_times);
+
+    // Calculate total cumulative user and system time
+    total_user_time = end_times.tms_cutime - start_times.tms_cutime;
+    total_sys_time = end_times.tms_cstime - start_times.tms_cstime;
+
+    printf("Total User Time: %ld\n", total_user_time);
+    printf("Total System Time: %ld\n", total_sys_time);
+
+    return 0;
+}
+
+
+2) 2 Create first activity to accept information like Employee First Name, Middle Name, Last
+Name, Salary, Address, Email ID and display all information on second activity when
+user click on submit button.
+Ans
+
+ XML
+ 
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".FirstActivity">
+
+    <EditText
+        android:id="@+id/firstNameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="First Name" />
+
+    <EditText
+        android:id="@+id/middleNameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Middle Name" />
+
+    <EditText
+        android:id="@+id/lastNameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Last Name" />
+
+    <EditText
+        android:id="@+id/salaryEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Salary" />
+
+    <EditText
+        android:id="@+id/addressEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Address" />
+
+    <EditText
+        android:id="@+id/emailEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Email ID" />
+
+    <Button
+        android:id="@+id/submitButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Submit" />
+
+</LinearLayout>
+
+ 
+
+3) FSD
+Ans
+
+A) 
+
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Append File</title>
+</head>
+<body>
+  <h1>Append File</h1>
+  <form action="/append" method="post">
+    <input type="text" name="firstFile" placeholder="First File">
+    <input type="text" name="secondFile" placeholder="Second File">
+    <input type="submit" value="Append">
+  </form>
+</body>
+</html>
+
+--js file--
+
+const express = require('express');
+const fs = require('fs');
+
+const app = express();
+
+app.post('/append', (req, res) => {
+  const firstFile = req.body.first_file;
+  const secondFile = req.body.second_file;
+
+  // Read the contents of the first file.
+  const firstFileContents = fs.readFileSync(firstFile, 'utf8');
+
+  // Append the contents of the first file to the second file.
+  fs.appendFileSync(secondFile, firstFileContents);
+
+  // Redirect the user to the main page.
+  res.redirect('/');
+});
+
+app.listen(3000, () => {
+  console.log('App listening on port 3000');
+});
+
+
+
+B)
+
+ const http = require('http');
+const url = require('url');
+const fs = require('fs');
+
+const server = http.createServer((req, res) => {
+  // Parse the request URL
+  const parsedUrl = url.parse(req.url, true);
+
+  // Get the requested file name
+  const filename = parsedUrl.pathname;
+
+  // Try to open the file
+  try {
+    const file = fs.readFileSync(filename, 'utf8');
+
+    // Set the response headers
+    res.writeHead(200, {'Content-Type': 'text/html'});
+
+    // Write the file content to the response body
+    res.write(file);
+
+    // End the response
+    res.end();
+  } catch (err) {
+    // If the file could not be opened, throw a 404 error
+    res.writeHead(404, {'Content-Type': 'text/html'});
+    res.end('404 Not Found');
+  }
+});
+
+// Listen on port 8080
+server.listen(8080, () => {
+  console.log('Server listening on port 8080');
+});
+
+
+---------------------------------------------------------------------slip 22---------------------------------------------------------------------
+
+
+
+1) Write a C program in which process opens a file for reading, reads every 10th character in
+ the file and prints it. At the end it also prints how many characters it printed.
+
+Ans
+
+  #include <stdio.h>
+
+int main() {
+    FILE *file;
+    char ch;
+    int count = 0;
+
+    // Open the file for reading
+    file = fopen("input.txt", "r");
+    if (file == NULL) {
+        printf("Failed to open the file.\n");
+        return 1;
+    }
+
+    // Read every 10th character in the file and print it
+    while ((ch = fgetc(file)) != EOF) {
+        if (count % 10 == 0) {
+            printf("%c", ch);
+        }
+        count++;
+    }
+
+    // Close the file
+    fclose(file);
+
+    printf("\nTotal characters printed: %d\n", count);
+
+    return 0;
+}
+
+
+3) Write node js script to interact with the file system, and serve a web page from a file
+Ans
+
+const fs = require('fs');
+const http = require('http');
+
+// Create a server object
+const server = http.createServer((req, res) => {
+  // Get the requested path
+  const path = req.url;
+
+  // Check if the requested path is a file
+  if (fs.existsSync(path)) {
+    // Serve the file
+    res.writeHead(200, {
+      'Content-Type': 'text/html',
+    });
+    fs.createReadStream(path).pipe(res);
+  } else {
+    // 404 Not Found
+    res.writeHead(404, {
+      'Content-Type': 'text/plain',
+    });
+    res.end('File not found');
+  }
+});
+
+// Listen on port 8080
+server.listen(8080, () => {
+  console.log('Server listening on port 8080');
+});
+
+
+------------------------------------------------------------------------------------slip 23------------------------------------------------------------------
+
+
+
+1)  Write a C program in which process opens one file for reading and another for writing. It
+reads alternate characters from file and writes them in another file
+Ans
+
+  #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    FILE *read_file, *write_file;
+    char ch, next_ch;
+
+    // Open the read file for reading
+    read_file = fopen("sample.txt", "r");
+    
+    // Open the write file for writing
+    
+    write_file = fopen("sample2.txt", "w");
+    if (write_file == NULL) {
+        printf("Error: Unable to open write file for writing.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read alternate characters from the read file and write them to the write file
+    while ((ch = fgetc(read_file)) != EOF) {
+        next_ch = fgetc(read_file);
+        if (next_ch != EOF) {
+            fputc(ch, write_file);
+        }
+    }
+
+    // Close the files
+    fclose(read_file);
+    fclose(write_file);
+
+    return 0;
+}
+
+
+2) Create an android application that demonstrate Options Menu and Context Menu
+Ans
+  
+ XML
+main 
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Long press here for Context Menu"
+        android:textSize="24sp" />
+
+</RelativeLayout>
+
+menu XML
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_option1"
+        android:title="Option 1" />
+    <item
+        android:id="@+id/action_option2"
+        android:title="Option 2" />
+</menu>
+
+context XML
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_context1"
+        android:title="Context 1" />
+    <item
+        android:id="@+id/action_context2"
+        android:title="Context 2" />
+</menu>
+
+
+--JAVA--
+
+import android.os.Bundle;
+import android.view.ContextMenu;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    private TextView textView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        textView = findViewById(R.id.textView);
+
+        // Register the TextView for context menu
+        registerForContextMenu(textView);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the options menu
+        getMenuInflater().inflate(R.menu.options_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle options menu item clicks
+        switch (item.getItemId()) {
+            case R.id.action_option1:
+                Toast.makeText(this, "Option 1 selected", Toast.LENGTH_SHORT).show();
+                return true;
+            case R.id.action_option2:
+                Toast.makeText(this, "Option 2 selected", Toast.LENGTH_SHORT).show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        // Inflate the context menu
+        getMenuInflater().inflate(R.menu.context_menu, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        // Handle context menu item clicks
+        switch (item.getItemId()) {
+            case R.id.action_context1:
+                Toast.makeText(this, "Context 1 selected", Toast.LENGTH_SHORT).show();
+                return true;
+            case R.id.action_context2:
+                Toast.makeText(this, "Context 2 selected", Toast.LENGTH_SHORT).show();
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
+}
+
+
+ 
+
+
+3) FSD
+Ans
+
+const { readline } = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+});
+
+rl.question('What is your name? ', (name) => {
+  console.log(`Hello, ${name.toUpperCase()}, nice to meet you!`);
+});
+
+
+
+----------------------------------------------------------------------------------slip 23---------------------------------------------------------------------
+
+
+
+1) Write C program which takes a filename as command line argument and displays all its
+  characteristics as shown by ls –l. (File type, permissions, owner name, number of links, file
+  size, file modification time, inode number and name of the file). 
+
+Ans--
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
+#include <time.h>
+
+char* get_file_permissions(mode_t mode) {
+    static char perms[10];
+    strcpy(perms, "----------");
+
+    if (S_ISDIR(mode)) {
+        perms[0] = 'd';
+    } else if (S_ISLNK(mode)) {
+        perms[0] = 'l';
+    }
+
+    if (mode & S_IRUSR) {
+        perms[1] = 'r';
+    }
+    if (mode & S_IWUSR) {
+        perms[2] = 'w';
+    }
+    if (mode & S_IXUSR) {
+        perms[3] = 'x';
+    }
+    if (mode & S_IRGRP) {
+        perms[4] = 'r';
+    }
+    if (mode & S_IWGRP) {
+        perms[5] = 'w';
+    }
+    if (mode & S_IXGRP) {
+        perms[6] = 'x';
+    }
+    if (mode & S_IROTH) {
+        perms[7] = 'r';
+    }
+    if (mode & S_IWOTH) {
+        perms[8] = 'w';
+    }
+    if (mode & S_IXOTH) {
+        perms[9] = 'x';
+    }
+
+    return perms;
+}
+
+int main(int argc, char *argv[]) {
+    struct stat file_stat;
+    struct passwd *pwd;
+    struct group *grp;
+    struct tm *time_info;
+    char time_str[80];
+    char *perms;
+    int i;
+
+    if (argc < 2) {
+        printf("Usage: %s file1 file2 ... fileN\n", argv[0]);
+        return 1;
+    }
+
+    for (i = 1; i < argc; i++) {
+        if (lstat(argv[i], &file_stat) == -1) {
+            printf("Error: Could not get file status for '%s'\n", argv[i]);
+            continue;
+        }
+
+        perms = get_file_permissions(file_stat.st_mode);
+        pwd = getpwuid(file_stat.st_uid);
+        grp = getgrgid(file_stat.st_gid);
+        time_info = localtime(&file_stat.st_mtime);
+        strftime(time_str, sizeof(time_str), "%b %d %H:%M", time_info);
+
+        printf("%s %3lu %-8s %-8s %8lld %s %s\n", perms, file_stat.st_nlink,
+               pwd->pw_name, grp->gr_name, (long long) file_stat.st_size, time_str, argv[i]);
+    }
+
+    return 0;
+}
+
+
+
+
+3) Write a program using node js create eLearning System. Using different routing in
+   express js(Student, Course). 
+Ans
+ 
+  // Import the Express library
+const express = require('express');
+
+// Create an Express app
+const app = express();
+
+// Create a router for students
+const studentRouter = express.Router();
+
+// Define the routes for students
+studentRouter.get('/', (req, res) => {
+  // Get all students
+  res.json([
+    {
+      id: 1,
+      name: 'John Doe',
+      email: 'johndoe@example.com',
+    },
+    {
+      id: 2,
+      name: 'Jane Doe',
+      email: 'janedoe@example.com',
+    },
+  ]);
+});
+
+studentRouter.post('/', (req, res) => {
+  // Create a new student
+  const student = {
+    name: req.body.name,
+    email: req.body.email,
+  };
+
+  // Save the student to the database
+  // ...
+
+  // Redirect the user to the student list page
+  res.redirect('/students');
+});
+
+studentRouter.delete('/:id', (req, res) => {
+  // Delete the student with the given ID
+  // ...
+
+  // Redirect the user to the student list page
+  res.redirect('/students');
+});
+
+// Create a router for courses
+const courseRouter = express.Router();
+
+// Define the routes for courses
+courseRouter.get('/', (req, res) => {
+  // Get all courses
+  res.json([
+    {
+      id: 1,
+      name: 'Introduction to Computer Science',
+      instructor: 'John Doe',
+    },
+    {
+      id: 2,
+      name: 'Data Structures and Algorithms',
+      instructor: 'Jane Doe',
+    },
+  ]);
+});
+
+courseRouter.post('/', (req, res) => {
+  // Create a new course
+  const course = {
+    name: req.body.name,
+    instructor: req.body.instructor,
+  };
+
+  // Save the course to the database
+  // ...
+
+  // Redirect the user to the course list page
+  res.redirect('/courses');
+});
+
+courseRouter.delete('/:id', (req, res) => {
+  // Delete the course with the given ID
+  // ...
+
+  // Redirect the user to the course list page
+  res.redirect('/courses');
+});
+
+// Mount the student and course routers on the app
+app.use('/students', studentRouter);
+app.use('/courses', courseRouter);
+
+// Start the app
+app.listen(3000, () => {
+  console.log('App listening on port 3000');
+});
+
+
+
+
+-----------------------------------------------------------------------------slip 25-----------------------------------------------------------------------------
+
+
+1) Write a C program which executes two cleanup functions when it terminates. In one
+   cleanup function it prints a message “Doing clean up work, Closing files” in another
+   function it prints “doing cleanup work, freeing memory”
+
+Ans-
+
+ #include <stdio.h>
+#include <stdlib.h>
+
+void cleanup_files() {
+    printf("Doing cleanup work, Closing files\n");
+    // Close any open files here
+}
+
+void cleanup_memory() {
+    printf("Doing cleanup work, Freeing memory\n");
+    // Free any dynamically allocated memory here
+}
+
+int main() {
+    // Register the cleanup functions
+    atexit(cleanup_files);
+    atexit(cleanup_memory);
+
+    // The rest of your program goes here
+
+    return 0;
+}
+
+
+
+3) Write node js script to interact with the file system, and serve a web page from a file
+Ans--
+
+const fs = require('fs');
+const http = require('http');
+
+// Get the path to the web page file.
+const filePath = './index.html';
+
+// Read the contents of the web page file.
+const contents = fs.readFileSync(filePath);
+
+// Create a new HTTP server.
+const server = http.createServer((req, res) => {
+  // Serve the web page file.
+  res.writeHead(200, {'Content-Type': 'text/html'});
+  res.write(contents);
+  res.end();
+});
+
+// Start the HTTP server.
+server.listen(3000, () => {
+  console.log('Server started on port 3000');
+});
+
+
+-------------------------------------------------------------------------------------END-----------------------------------------------------------------------
+-------------------------------------------------------------------------------------END-----------------------------------------------------------------------
