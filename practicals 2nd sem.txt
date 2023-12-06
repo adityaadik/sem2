@@ -801,7 +801,29 @@ int main() {
 2) Create an android application that demonstrate WebView.
 Ans
 
+  Q5
+
+const http = require('http');
+const fs = require('fs');
+
+const server = http.createServer((req, res) => {
+  const filePath = './index.html';
   
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404, {'Content-Type': 'text/html'});
+      res.end('404 Not Found');
+    } else {
+      res.writeHead(200, {'Content-Type': 'text/html'});
+      res.end(data);
+    }
+  });
+});
+
+server.listen(8080, () => {
+  console.log('Server listening on port 8080');
+});
+
 
 
 
@@ -1046,6 +1068,82 @@ Ans
    company name =” TCS”.
 Ans
 
+const MongoClient = require('mongodb').MongoClient;
+
+// Connection URL
+const url = 'mongodb://localhost:27017';
+
+// Database Name
+const dbName = 'company';
+
+// Create a new MongoClient
+const client = new MongoClient(url);
+
+// Connect to the MongoDB server
+client.connect(function(err) {
+  if (err) {
+    console.log('Error occurred while connecting to MongoDB:', err);
+    return;
+  }
+
+  console.log('Connected successfully to the MongoDB server');
+
+  const db = client.db(dbName);
+
+  // Create 'Product' collection
+  const productCollection = db.collection('Product');
+
+  // Insert documents into 'Product' collection
+  productCollection.insertMany([
+    { name: 'Product1', company: 'TCS' },
+    { name: 'Product2', company: 'Infosys' },
+    { name: 'Product3', company: 'TCS' },
+    // Add more documents as needed
+  ], function(err, result) {
+    if (err) {
+      console.log('Error occurred while inserting documents into "Product" collection:', err);
+      client.close();
+      return;
+    }
+
+    console.log(`${result.insertedCount} documents inserted into "Product" collection`);
+
+    // Create 'Service' collection
+    const serviceCollection = db.collection('Service');
+
+    // Insert documents into 'Service' collection
+    serviceCollection.insertMany([
+      { name: 'Service1', company: 'TCS' },
+      { name: 'Service2', company: 'Infosys' },
+      { name: 'Service3', company: 'Wipro' },
+      // Add more documents as needed
+    ], function(err, result) {
+      if (err) {
+        console.log('Error occurred while inserting documents into "Service" collection:', err);
+        client.close();
+        return;
+      }
+
+      console.log(`${result.insertedCount} documents inserted into "Service" collection`);
+
+      // Find documents in 'Product' collection with company name "TCS"
+      productCollection.find({ company: 'TCS' }).toArray(function(err, docs) {
+        if (err) {
+          console.log('Error occurred while finding documents in "Product" collection:', err);
+          client.close();
+          return;
+        }
+
+        console.log('Documents in "Product" collection with company name "TCS":');
+        console.log(docs);
+
+        client.close();
+      });
+    });
+  });
+});
+
+
 
 
 -----------------------------------------------------------------------------slip 8----------------------------------------------------------------------
@@ -1093,6 +1191,35 @@ Ans
   
 3) Write node js script to interact with the filesystem, and serve a web page from a file
 Ans
+
+const http = require('http');
+const fs = require('fs');
+
+const server = http.createServer((req, res) => {
+  if (req.url === '/') {
+    // Read the HTML file
+    fs.readFile('index.html', (err, data) => {
+      if (err) {
+        // Handle error
+        res.writeHead(500);
+        res.end('Error loading index.html');
+      } else {
+        // Serve the HTML file
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        res.end(data);
+      }
+    });
+  } else {
+    // Handle 404 error
+    res.writeHead(404);
+    res.end('Page not found');
+  }
+});
+
+server.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+
 
    
 
